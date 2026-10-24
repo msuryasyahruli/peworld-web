@@ -1,10 +1,7 @@
-import React from "react";
 import { useRouter } from "next/router";
 import { useForm } from "react-hook-form";
 import Image from "next/image";
 import Link from "next/link";
-import { setStorage } from "../../config/storage";
-import Toast from "../../components/alert/Toast";
 import { registerUser } from "../../config/redux/actions/userAction";
 
 // assets
@@ -25,19 +22,8 @@ const SignUp = () => {
   });
 
   const onSubmit = async (data) => {
-    try {
-      const res = await registerUser(data);
-      if (res.statusCode === 201) {
-        const userData = Array.isArray(res.data) ? res.data[0] : res.data;
-        setStorage(userData);
-        router.replace("/");
-      }
-    } catch (error) {
-      Toast.fire({
-        icon: "error",
-        title: error.response.data.message,
-      });
-    }
+    await registerUser(data);
+    router.replace("/");
   };
 
   return (

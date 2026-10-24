@@ -38,6 +38,7 @@ export const registerUser = async (payload) => {
         icon: "success",
         title: data.message,
       });
+      setStorage(data.data);
     } else {
       Toast.fire({
         icon: "warning",
