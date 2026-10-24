@@ -1,328 +1,178 @@
-import React, { useEffect, useRef, useState } from "react";
-import upload from "../imgEditProfile/upload.png";
 import Image from "next/image";
-import axios from "axios";
-import { useRouter } from "next/router";
-import ModalUpdate from "../../modal portfolio/modalUpdate";
-import ModalDelete from "../../modal portfolio/modalDelete";
-import Swal from "sweetalert2";
+import { useState } from "react";
+import { useUserPortfolio } from "../../../config/redux/hooks";
+import { getUserId } from "../../../config/storage";
+import {
+  addPortfolio,
+  deletePortfolio,
+  updatePortfolio,
+} from "../../../config/redux/actions/portfolioAction";
+import Modal from "../../alert/modal";
+import PortfolioForm from "./PortfolioForm";
+import upload from "../imgEditProfile/upload.png";
 
-const Toast = Swal.mixin({
-  toast: true,
-  position: "top-end",
-  showConfirmButton: false,
-  timer: 1000,
-  timerProgressBar: true,
-  didOpen: (toast) => {
-    toast.addEventListener("mouseenter", Swal.stopTimer);
-    toast.addEventListener("mouseleave", Swal.resumeTimer);
-  },
-});
-
-const Portofolio = () => {
-  // get all portfolio
-  const router = useRouter();
-  const [portfolio, setPortfolio] = useState([]);
-  useEffect(() => {
-    if (router.isReady) {
-      const islogin = localStorage.getItem("user_id");
-      axios
-        .get(`${process.env.NEXT_PUBLIC_API}/portfolio/${islogin}`)
-        .then((res) => {
-          setPortfolio(res.data.data);
-        })
-        .catch((err) => {
-          console.log(err);
-        });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [router.isReady]);
-
-  //login
-  const [login, setLogin] = useState();
-  useEffect(() => {
-    if (router.isReady) {
-      const login = localStorage.getItem("user_id");
-      setLogin(login);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [router.isReady]);
-
-  // create portofolio
-  const [data, setData] = useState({
-    app_name: "",
-    link_repo: "",
-    tipe: "",
-    workerid: "",
-  });
-
-  const handleChange = (e) => {
-    setData({
-      ...data,
-      [e.target.name]: e.target.value,
-    });
-    // console.log(data);
-  };
-
-  const [photo, setPhoto] = useState(null);
-
-  const inputRef = useRef(null);
-  const handleImgClink = () => {
-    inputRef.current.click();
-  };
-
-  const [preview, setPreview] = useState(null);
-  const handleUpload = (e) => {
-    const img = e.target.files[0];
-    setPhoto(img);
-    setPreview(URL.createObjectURL(img));
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const formData = new FormData();
-    formData.append("app_name", data.app_name);
-    formData.append("link_repo", data.link_repo);
-    formData.append("tipe", data.tipe);
-    formData.append("photo", photo);
-    formData.append("workerid", data.workerid);
-    axios
-      .post(`${process.env.NEXT_PUBLIC_API}/portfolio`, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      })
-      .then((res) => {
-        Toast.fire({
-          icon: "success",
-          title: res.data.message,
-        });
-        setTimeout(function () {
-          window.location.reload();
-        }, 1000);
-      })
-      .catch((err) => {
-        console.log(err);
-        alert(err.message);
-      });
+const PortfolioItem = ({ portfolio, onUpdate, onDelete }) => {
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const initialValues = {
+    app_name: portfolio.app_name || "",
+    type: portfolio.type || "",
+    link: portfolio.link || "",
+    photo: portfolio.photo || "",
   };
 
   return (
     <div>
-      <div
-        className="mt-4"
-        style={{ borderRadius: 8, background: "white", padding: 20 }}
-      >
-        <div>
-          <p style={{ fontWeight: 600, fontSize: 22 }}>Portofolio</p>
+      <div className="form-row align-items-center">
+        <div className="col-md-4 mb-3 mb-md-0">
+          {portfolio.photo ? (
+            <Image
+              src={portfolio.photo}
+              alt={`${portfolio.app_name} portfolio`}
+              width={320}
+              height={200}
+              unoptimized
+              className="rounded w-100 h-auto"
+            />
+          ) : (
+            <Image
+              src={upload}
+              alt="No portfolio image"
+              className="rounded w-100 h-auto"
+            />
+          )}
         </div>
-        <hr />
-        {portfolio.map((portfolio, index) => (
-          <div key={index}>
-            <div className="row mb-3 mt-2">
-              <div className="col-md-4">
-                <Image
-                  src={portfolio.photo}
-                  alt="app"
-                  crossOrigin="anonymous"
-                  width={100}
-                  height={100}
-                  style={{ width: "100%",height:"auto", borderRadius: 5 }}
-                />
-              </div>
-              <div className="col-md-6">
-                <p className="mt-2 p-0" style={{ fontWeight: 600 }}>
-                  {portfolio.app_name}
-                </p>
-                <p className="m-0 p-0">{portfolio.link_repo}</p>
-                <p className="mb-3 p-0">{portfolio.tipe}</p>
-              </div>
-              <div className="col-md-2 d-flex justify-content-md-center">
-                <ModalUpdate
-                  portfolio_id={portfolio.portfolio_id}
-                  app_name={portfolio.app_name}
-                  link_repo={portfolio.link_repo}
-                  tipe={portfolio.tipe}
-                >
-                  <i className="bi bi-pencil-square"></i>
-                </ModalUpdate>
-                <ModalDelete portfolio_id={portfolio.portfolio_id}>
-                  <i className="bi bi-trash"></i>
-                </ModalDelete>
-              </div>
-            </div>
-            <hr />
-          </div>
-        ))}
-        <form onSubmit={handleSubmit}>
-          <div>
-            <p
-              style={{
-                color: "#9ea0a5",
-                fontSize: 12,
-                margin: "30px 0 0 0",
-              }}
-            >
-              Nama aplikasi
-            </p>
-            <input
-              type="text"
-              placeholder="Masukan nama aplikasi"
-              style={{
-                width: "100%",
-                height: 50,
-                borderRadius: 4,
-                border: "1px solid #e2e5ed",
-              }}
-              value={data.app_name}
-              onChange={handleChange}
-              name="app_name"
-            />
-          </div>
-          <div>
-            <p
-              style={{
-                color: "#9ea0a5",
-                fontSize: 12,
-                margin: "30px 0 0 0",
-              }}
-            >
-              Link repository
-            </p>
-            <input
-              type="text"
-              placeholder="Masukan link repository"
-              style={{
-                width: "100%",
-                height: 50,
-                borderRadius: 4,
-                border: "1px solid #e2e5ed",
-              }}
-              value={data.link_repo}
-              onChange={handleChange}
-              name="link_repo"
-            />
-          </div>
-          <div>
-            <div>
-              <p
-                style={{
-                  color: "#9ea0a5",
-                  fontSize: 12,
-                  margin: "30px 0 0 0",
-                }}
-              >
-                Type portofolio
-              </p>
-              <div style={{ display: "flex" }}>
-                <div
-                  className="p-2 mr-3"
-                  style={{
-                    height: 50,
-                    borderRadius: 4,
-                    border: "1px solid #e2e5ed",
-                  }}
-                >
-                  <input
-                    type="radio"
-                    defaultValue="mobile"
-                    value={"Aplikasi Mobile"}
-                    onChange={handleChange}
-                    name="tipe"
-                  />
-                  <label htmlFor="mobile">Aplikasi Mobile</label>
-                  <br />
-                </div>
-                <div
-                  className="p-2"
-                  style={{
-                    height: 50,
-                    borderRadius: 4,
-                    border: "1px solid #e2e5ed",
-                  }}
-                >
-                  <input
-                    type="radio"
-                    defaultValue="web"
-                    value={"Aplikasi Web"}
-                    onChange={handleChange}
-                    name="tipe"
-                  />
-                  <label htmlFor="web">Aplikasi Web</label>
-                  <br />
-                </div>
-              </div>
-            </div>
-          </div>
-          <div>
-            <p
-              style={{
-                color: "#9ea0a5",
-                fontSize: 12,
-                margin: "30px 0 0 0",
-              }}
-            >
-              Upload gambar
-            </p>
-            <div
-              style={{
-                width: "100%",
-                height: 300,
-                borderRadius: 10,
-                border: "2px dashed #e2e5ed",
-                justifyContent: "center",
-                alignItems: "center",
-                display: "flex",
-                flexDirection: "column",
-              }}
-            >
-              <div onClick={handleImgClink}>
-                {preview ? (
-                  <Image
-                    src={preview}
-                    alt="avatar"
-                    height={180}
-                    width={320}
-                    style={{ objectFit: "cover" }}
-                    className="m-auto my-3"
-                  />
-                ) : (
-                  <Image src={upload} alt="uploadImg" />
-                )}
-                <input
-                  className="border"
-                  type="file"
-                  ref={inputRef}
-                  name="photo"
-                  onChange={handleUpload}
-                  style={{ display: "none" }}
-                />
-              </div>
-            </div>
-            <div>
-              <input
-                type="hidden"
-                name="workerid"
-                value={(data.workerid = login)}
-              />
-            </div>
-          </div>
-          <hr />
-          <button
-            onSubmit={handleSubmit}
-            className="w-100 mt-3"
-            style={{
-              height: 50,
-              backgroundColor: "white",
-              borderRadius: 4,
-              color: "#fbb017",
-              border: "1px solid #fbb017",
-            }}
+        <div className="col-md-6">
+          <p className="mt-2 h6 font-weight-bold">{portfolio.app_name}</p>
+          <a
+            className="h6 d-block text-break"
+            href={portfolio.link}
+            target="_blank"
+            rel="noreferrer"
           >
-            Tambah portofolio
-          </button>
-        </form>
+            {portfolio.link}
+          </a>
+          <p className="h6 text-black-50">{portfolio.type}</p>
+        </div>
+        <div className="col-md-2 d-flex flex-md-column align-items-end">
+          <Modal
+            modalTitle="Edit portfolio"
+            btnTitle="Edit"
+            buttonClassName="text-warning font-weight-bold"
+            show={isEditOpen}
+            onOpen={() => setIsEditOpen(true)}
+            onClose={() => setIsEditOpen(false)}
+          >
+            <PortfolioForm
+              initialValues={initialValues}
+              onSubmit={(values) => onUpdate(portfolio.id, values)}
+              onCancel={() => setIsEditOpen(false)}
+              submitLabel="Save changes"
+            />
+          </Modal>
+          <Modal
+            modalTitle="Delete confirmation"
+            btnTitle="Delete"
+            buttonClassName="text-danger font-weight-bold"
+            show={isDeleteOpen}
+            onOpen={() => setIsDeleteOpen(true)}
+            onClose={() => setIsDeleteOpen(false)}
+          >
+            <p className="h4 text-center font-weight-bolder">Are you sure you want to delete this portfolio?</p>
+            <hr />
+            <button
+              type="button"
+              className="btn btn-danger rounded-pill w-100"
+              onClick={async () => {
+                const succeeded = await onDelete(portfolio.id);
+                if (succeeded) setIsDeleteOpen(false);
+              }}
+            >
+              Yes, Delete
+            </button>
+          </Modal>
+        </div>
       </div>
+      <hr />
+    </div>
+  );
+};
+
+const Portofolio = () => {
+  const userId = getUserId();
+  const [refetch, setRefetch] = useState(0);
+  const { userPortfolio, isLoading } = useUserPortfolio(userId, {}, refetch);
+
+  const createPortfolioFormData = (values, includeUserId = false) => {
+    const formData = new FormData();
+    formData.append("app_name", values.app_name);
+    formData.append("type", values.type);
+    formData.append("link", values.link);
+    if (includeUserId) formData.append("user_id", userId);
+    if (values.photo instanceof File) {
+      formData.append("photo", values.photo);
+    }
+    return formData;
+  };
+
+  const handleCreate = async (values) => {
+    const succeeded = await addPortfolio(
+      createPortfolioFormData(values, true),
+    );
+    if (succeeded) setRefetch((current) => current + 1);
+    return succeeded;
+  };
+
+  const handleUpdate = async (id, values) => {
+    const succeeded = await updatePortfolio(
+      id,
+      createPortfolioFormData(values),
+    );
+    if (succeeded) setRefetch((current) => current + 1);
+    return succeeded;
+  };
+
+  const handleDelete = async (id) => {
+    const succeeded = await deletePortfolio(id);
+    if (succeeded) setRefetch((current) => current + 1);
+    return succeeded;
+  };
+
+  return (
+    <div className="mt-3 rounded-lg bg-white p-3 p-md-4 shadow">
+      <p className="h4 font-weight-bolder">Portfolio</p>
+      <hr />
+      {isLoading ? (
+        <div
+          className="d-flex justify-content-center align-items-center"
+          style={{ height: "100px" }}
+        >
+          <p>Loading...</p>
+        </div>
+      ) : userPortfolio.length === 0 ? (
+        <div
+          className="d-flex justify-content-center align-items-center"
+          style={{ height: "100px" }}
+        >
+          <p>No portfolio found.</p>
+        </div>
+      ) : (
+        userPortfolio.map((portfolio) => (
+          <PortfolioItem
+            key={portfolio.id}
+            portfolio={portfolio}
+            onUpdate={handleUpdate}
+            onDelete={handleDelete}
+          />
+        ))
+      )}
+
+      <PortfolioForm
+        initialValues={{ user_id: userId }}
+        onSubmit={handleCreate}
+        submitLabel="Add portfolio"
+        submitClassName="btn btn-outline-warning w-100"
+      />
     </div>
   );
 };

@@ -1,140 +1,148 @@
 import Image from "next/image";
-import React, { useEffect } from "react";
-import profile from "./imgProfile/profile.png";
-import map from "./imgEditProfile/map-pin.png";
 import { useState } from "react";
 import { useRouter } from "next/router";
-import axios from "axios";
-import DataDiri from "./profileEdit/DataDiri";
+import { useUser } from "../../config/redux/hooks/userHook";
+import Modal from "../alert/modal";
+import PersonalData from "./profileEdit/PersonalData";
 import Skill from "./profileEdit/skill";
-import Pengalaman from "./profileEdit/Pengalaman";
+import Experience from "./profileEdit/Experience";
 import Portofolio from "./profileEdit/Portofolio";
-import UploadPhoto from "../modal photo/uploadPhoto";
+import { getUserId } from "../../config/storage";
+
+import profile from "./imgProfile/profile.png";
+import map from "./imgEditProfile/map-pin.png";
 
 const EditProfile = () => {
   const router = useRouter();
-  const [worker, setWorker] = useState([]);
-  useEffect(() => {
-    if (router.isReady) {
-      axios
-        .get(`${process.env.NEXT_PUBLIC_API}/worker/${router.query.id}`)
-        .then((res) => {
-          setWorker(res.data.data[0]);
-        })
-        .catch((err) => {
-          console.log(err);
-        });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [router.isReady]);
+  const paramName = router.query.id;
+  const userId = getUserId();
+  const [loading, setLoading] = useState(false);
+  const [refetch, setRefetch] = useState(0);
+  const { data: userData, isLoading } = useUser(refetch);
 
-  return (
+  const [imagePreview, setImagePreview] = useState(null);
+  const [imageFile, setImageFile] = useState(null);
+
+  const handleImageChange = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      const imageUrl = URL.createObjectURL(file);
+      setImagePreview(imageUrl);
+      setImageFile(file);
+    } else {
+      setImagePreview(null);
+      setImageFile(null);
+    }
+  };
+
+  return paramName !== userId ? (
     <div>
-      <main style={{ backgroundColor: "#f6f7f8" }}>
-        <section
-          style={{
-            background:
-              "linear-gradient( to bottom,#5e50a1 0%,#5e50a1 350px, #f3f4f8 350px,#f3f4f8 100%)",
-          }}
-        >
-          <div className="container pt-5 pb-5">
-            <div className="row">
-              <section className="col-lg-4">
-                <div
-                  style={{ borderRadius: 8, background: "white", padding: 20 }}
+      <h3 className="text-center">Loading...</h3>
+    </div>
+  ) : (
+    <main
+      style={{
+        background:
+          "linear-gradient(to bottom, #5e50a1 0%, #5e50a1 350px, #f3f4f8 350px, #f3f4f8 100%)",
+      }}
+    >
+      <div className="container pt-5 pb-5">
+        <div className="row">
+          <section className="col-lg-4 px-2 px-sm-3">
+            <div className="rounded-lg bg-white p-3 p-md-4 shadow">
+              <div className="py-3 d-flex flex-column align-items-center">
+                <Image
+                  src={!userData?.photo ? profile : userData?.photo}
+                  alt="profile"
+                  className="rounded-circle"
+                  width={150}
+                  height={150}
+                />
+                <Modal
+                  modalTitle="Edit photo"
+                  btnTitle={
+                    <>
+                      <i className="bi bi-pencil-square" /> Edit
+                    </>
+                  }
+                  buttonClassName="font-weight-bold text-black-50 rounded-pill"
                 >
-                  <div
-                    className="pt-3 pb-3 justify-content-center d-flex align-items-center"
-                    style={{ flexDirection:"column" }}
-                  >
-                    <div style={{ width: "150px", height: "150px" }}>
-                      {!worker.worker_photo ? (
+                  <form>
+                    <div className="form-group">
+                      <div className="mx-auto mb-3 d-flex align-items-center">
                         <Image
-                          src={profile}
-                          alt="profile"
-                          style={{
-                            width: "100%",
-                            height: "100%",
-                            borderRadius: "100%",
-                          }}
+                          src={imagePreview || userData?.user_photo || profile}
+                          alt="userPicture"
+                          className="rounded-circle mr-3"
+                          style={{ objectFit: "cover" }}
+                          width={144}
+                          height={144}
                         />
-                      ) : (
-                        <Image
-                          src={worker.worker_photo}
-                          alt="profile"
-                          width={100}
-                          height={100}
-                          style={{
-                            width: "100%",
-                            height: "100%",
-                            borderRadius: "100%",
-                          }}
+                        <input
+                          type="file"
+                          id="image"
+                          className="form-control"
+                          onChange={handleImageChange}
                         />
-                      )}
+                      </div>
                     </div>
-                    <UploadPhoto
-                      worker_id={worker.worker_id}
-                      photo={worker.worker_photo}
-                    ></UploadPhoto>
-                  </div>
-                  <p style={{ fontSize: 22, fontWeight: 600 }}>
-                    {worker.worker_name}
-                  </p>
-                  <p>{worker.worker_jobdesk}</p>
-                  <div style={{ display: "flex" }}>
-                    <div className="mr-2">
-                      <Image src={map} alt="map" />
+                    <hr />
+                    <div className="form-row">
+                      <div className="col">
+                        <button
+                          type="button"
+                          className="btn btn-outline-danger rounded-pill w-100"
+                          data-dismiss="modal"
+                        >
+                          Batal
+                        </button>
+                      </div>
+                      <div className="col">
+                        <button
+                          type="button"
+                          className="btn btn-primary rounded-pill w-100"
+                        >
+                          Simpan
+                        </button>
+                      </div>
                     </div>
-                    <p
-                      style={{
-                        color: "#9ea0a5",
-                        fontSize: 14,
-                        fontWeight: 400,
-                      }}
-                    >
-                      {worker.worker_city}, {worker.worker_province}
-                    </p>
-                  </div>
-                  <p
-                    style={{ color: "#9ea0a5", fontSize: 14, fontWeight: 400 }}
-                  >
-                    {worker.worker_workplace}
+                  </form>
+                </Modal>
+              </div>
+              <div className="d-flex flex-column align-items-center align-items-lg-start">
+                <p className="h4 font-weight-bolder">{userData?.name}</p>
+                <p className="h6">{userData?.last_work}</p>
+                <div className="d-flex">
+                  <Image src={map} alt="pin" width={16} />
+                  <p className="h6 text-muted ml-2">
+                    {userData?.city}, {userData?.province}
                   </p>
                 </div>
-                <button
-                  className="w-100 mt-3"
-                  style={{
-                    height: 50,
-                    backgroundColor: "#5e50a1",
-                    borderRadius: 10,
-                    color: "white",
-                  }}
-                >
-                  Simpan
-                </button>
-                <button
-                  className="w-100 mt-3"
-                  style={{
-                    height: 50,
-                    backgroundColor: "white",
-                    borderRadius: 10,
-                    color: "#5e50a1",
-                  }}
-                >
-                  Batal
-                </button>
-              </section>
-              <section className="col-lg-8 pt-3 pt-lg-0">
-                <DataDiri />
-                <Skill />
-                <Pengalaman />
-                <Portofolio />
-              </section>
+                <p className="text-muted">{userData?.workplace}</p>
+                <p className="h6 text-muted">{userData?.description}</p>
+              </div>
             </div>
-          </div>
-        </section>
-      </main>
-    </div>
+            {/* <button className="btn btn-primary mt-3 w-100 shadow">
+              Simpan
+            </button>
+            <button className="btn btn-outline-primary mt-3 w-100 shadow">
+              Batal
+            </button> */}
+          </section>
+
+          <section className="col-lg-8 pt-3 pt-lg-0 px-2 px-sm-3">
+            <PersonalData
+              onData={userData}
+              onLoading={setLoading}
+              onRefetch={setRefetch}
+            />
+            <Skill onData={userData} onRefetch={setRefetch} />
+            <Experience />
+            <Portofolio />
+          </section>
+        </div>
+      </div>
+    </main>
   );
 };
 

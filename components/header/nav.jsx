@@ -1,131 +1,108 @@
-import Image from "next/image";
 import React, { useEffect, useState } from "react";
-import logo from "./imgNav/logo.png";
-import bell from "./imgNav/bell.png";
-import mail from "./imgNav/mail.png";
-import Profile2 from "./imgNav/profile (2).png";
-import axios from "axios";
-import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/router";
+import { clearStorage, getUserData } from "../../config/storage";
+
+import logo from "../../public/assets/imgNav/logo.png";
+import bell from "../../public/assets/imgNav/bell.png";
+import mail from "../../public/assets/imgNav/mail.png";
+import Profile2 from "../../public/assets/imgNav/profile2.png";
 
 const Nav = () => {
-  const [login, setLogin] = useState();
   const router = useRouter();
-
-  const isLogout = () => {
-    // setTimeout(function () {
-    //   window.location.reload();
-    // }, 1);
-    router.push("/login/worker");
-    localStorage.clear();
-  };
+  const [userData, setData] = useState();
 
   useEffect(() => {
-    const isLogin = localStorage.getItem("user_id");
-    setLogin(isLogin);
+    const data = getUserData();
+    setData(data);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // const router = useRouter();
-  const [worker, setWorker] = useState([]);
-  useEffect(() => {
-    const user = localStorage.getItem("user_id");
-    axios
-      .get(`${process.env.NEXT_PUBLIC_API}/worker/${user}`)
-      .then((res) => {
-        setWorker(res.data.data[0]);
-      })
-      .catch((err) => {
-        console.log(err);
-      });
-  });
+  const isLogout = () => {
+    router.push("/");
+    setData(null);
+    clearStorage();
+  };
 
   return (
-    <div>
-      <header>
-        <nav
-          className="container"
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            height: 70,
-          }}
-        >
-          <div href={`/landingPage`}>
-            <Image src={logo} alt="logo" />
-          </div>
-          <div className="row">
-            <div className="pt-2">
-              <Image className="ml-3 mr-3" src={bell} alt="bell" />
+    <header className="py-2 sticky-top bg-white shadow-sm flex-fill">
+      <nav
+        className="container d-flex align-items-center"
+        style={{ height: 50 }}
+      >
+        <section className="flex-1">
+          <Image src={logo} alt="logo" />
+        </section>
+        {!userData ? (
+          <section>
+            <button
+              className="btn border-primary mr-2 px-3"
+              onClick={() => router.push("/auth/sign-in?as=worker")}
+            >
+              Masuk Untuk Pekerja
+            </button>
+            <button
+              className="btn text-white px-3"
+              style={{ backgroundColor: "#5e50a1" }}
+              onClick={() => router.push("/auth/sign-in?as=recruiter")}
+            >
+              Masuk Untuk Perekrut
+            </button>
+          </section>
+        ) : (
+          <section className="d-flex row">
+            <button className="btn p-0 m-3">
+              <Image src={bell} alt="bell" />
+            </button>
+            <button className="btn p-0 m-3">
+              <Image src={mail} alt="mail" />
+            </button>
+            <div className="btn-group">
+              <button
+                className="btn p-0 m-3"
+                type="button"
+                data-toggle="dropdown"
+                aria-haspopup="true"
+                aria-expanded="false"
+              >
+                <Image
+                  className="rounded-circle"
+                  src={Profile2}
+                  alt="profile"
+                  width={28}
+                  height={28}
+                />
+              </button>
+              <div
+                className="dropdown-menu dropdown-menu-right"
+                aria-labelledby="dropdown"
+              >
+                <button
+                  className="dropdown-item btn-light"
+                  onClick={() =>
+                    router.push(`/profile/${userData?.user_id || userData?.id}`)
+                  }
+                >
+                  Profile
+                </button>
+                <button
+                  className="dropdown-item"
+                  onClick={() => router.push(`/profile/edit/${userData?.id}`)}
+                >
+                  Edit profile
+                </button>
+                <button
+                  className="dropdown-item btn-light text-danger"
+                  onClick={isLogout}
+                >
+                  Logout
+                </button>
+              </div>
             </div>
-            <div className="pt-2">
-              <Image className="ml-3 mr-3" src={mail} alt="mail" />
-            </div>
-            <div className="mr-3">
-              <ul className="navbar-nav dropdown">
-                <li className="nav-item">
-                  <Link
-                    className="nav-link dropdown-toggle"
-                    href="#"
-                    id="navbarDropdownMenuLink"
-                    role="button"
-                    data-toggle="dropdown"
-                    aria-haspopup="true"
-                    aria-expanded="false"
-                  >
-                    {!worker.worker_photo ? (
-                      <Image
-                        className="ml-3"
-                        src={Profile2}
-                        alt="profile"
-                        width={30}
-                        height={30}
-                        style={{
-                          borderRadius: "100%",
-                        }}
-                      />
-                    ) : (
-                      <Image
-                        className="ml-3"
-                        src={worker.worker_photo}
-                        alt="profile"
-                        width={30}
-                        height={30}
-                        style={{
-                          borderRadius: "100%",
-                        }}
-                      />
-                    )}
-                  </Link>
-                  <div
-                    className="dropdown-menu dropdown-menu-right"
-                    aria-labelledby="navbarDropdownMenuLink"
-                  >
-                    <Link className="dropdown-item" href={`/profile/${login}`}>
-                      Profile
-                    </Link>
-                    <Link
-                      className="dropdown-item"
-                      href={`/profile/edit/${login}`}
-                    >
-                      Edit profile
-                    </Link>
-                    <button
-                      className="dropdown-item"
-                      // href="/landingPage"
-                      onClick={isLogout}
-                    >
-                      Log Out
-                    </button>
-                  </div>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </nav>
-      </header>
-    </div>
+          </section>
+        )}
+      </nav>
+    </header>
   );
 };
 
